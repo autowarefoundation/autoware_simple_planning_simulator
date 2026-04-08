@@ -1,5 +1,5 @@
-# testing_purpose_repository_for_autoware_development
-This repository is used for tests in autoware development
+# autoware_simple_planning_simulator
+This repository contains packages for planning simulation in Autoware. It includes a simple planning simulator, a dummy perception publisher, and a learning-based vehicle model. These packages were ported from the Autoware Universe repository to provide a standalone simulation environment for testing and development.
 
 ## Ported Packages
 These packages were ported from Autoware Universe.
@@ -21,6 +21,6 @@ These packages were ported from Autoware Universe.
 port(<package-name>): from Autoware Universe
 
   - Ported-from: https://github.com/autowarefoundation/autoware_universe/commit/<SHA>
-  - Ported-path: <path/in/upstream>
+  - Source-path: <path/in/upstream>
   - Ported-date: <YYYY-MM-DD>
 ```
