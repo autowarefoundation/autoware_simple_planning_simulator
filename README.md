@@ -1,2 +1,2 @@
-# testing_purpose_repository_for_autoware_development
-This repository is used for tests in autoware development
+# autoware_simple_planning_simulator
+This repository contains packages for planning simulation in Autoware.
