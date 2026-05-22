@@ -51,9 +51,11 @@ autoware_vehicle_msgs::msg::VelocityReport to_velocity_report(
   const std::shared_ptr<SimModelInterface> vehicle_model_ptr)
 {
   autoware_vehicle_msgs::msg::VelocityReport velocity;
-  velocity.longitudinal_velocity = static_cast<double>(vehicle_model_ptr->getVx());
+  velocity.longitudinal_velocity =
+    static_cast<decltype(velocity.longitudinal_velocity)>(vehicle_model_ptr->getVx());
   velocity.lateral_velocity = 0.0F;
-  velocity.heading_rate = static_cast<double>(vehicle_model_ptr->getWz());
+  velocity.heading_rate =
+    static_cast<decltype(velocity.heading_rate)>(vehicle_model_ptr->getWz());
   return velocity;
 }
 
@@ -75,7 +77,8 @@ autoware_vehicle_msgs::msg::SteeringReport to_steering_report(
   const std::shared_ptr<SimModelInterface> vehicle_model_ptr)
 {
   autoware_vehicle_msgs::msg::SteeringReport steer;
-  steer.steering_tire_angle = static_cast<double>(vehicle_model_ptr->getSteer());
+  steer.steering_tire_angle =
+    static_cast<decltype(steer.steering_tire_angle)>(vehicle_model_ptr->getSteer());
   return steer;
 }
 
@@ -602,7 +605,7 @@ void SimplePlanningSimulator::set_input(const Control & cmd, const double acc_by
 
   // TODO(Watanabe): The definition of the sign of acceleration in REVERSE mode is different
   // between .auto and proposal.iv, and will be discussed later.
-  const float combined_acc = [&] {
+  const double combined_acc = [&] {
     if (gear == GearCommand::NONE) {
       return 0.0;
     } else if (gear == GearCommand::REVERSE || gear == GearCommand::REVERSE_2) {
@@ -684,9 +687,11 @@ void SimplePlanningSimulator::add_measurement_noise(
   yaw += static_cast<float>((*n.rpy_dist_)(*n.rand_engine_));
   odom.pose.pose.orientation = autoware_utils_geometry::create_quaternion_from_yaw(yaw);
 
-  vel.longitudinal_velocity += static_cast<double>(velocity_noise);
+  vel.longitudinal_velocity +=
+    static_cast<decltype(vel.longitudinal_velocity)>(velocity_noise);
 
-  steer.steering_tire_angle += static_cast<double>((*n.steer_dist_)(*n.rand_engine_));
+  steer.steering_tire_angle +=
+    static_cast<decltype(steer.steering_tire_angle)>((*n.steer_dist_)(*n.rand_engine_));
 }
 
 void SimplePlanningSimulator::set_initial_state_with_transform(

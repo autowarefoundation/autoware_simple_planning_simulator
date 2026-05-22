@@ -49,7 +49,7 @@ SimplePyModel::SimplePyModel(
   // py_model_state_names
   py::list py_model_state_names_ = py_model_class.attr("get_state_names")();
   num_outputs_py = py_model_state_names_.size();
-  for (int STATE_IDX = 0; STATE_IDX < num_outputs_py; STATE_IDX++) {
+  for (std::size_t STATE_IDX = 0; STATE_IDX < num_outputs_py; STATE_IDX++) {
     py_model_state_names.push_back(PyBytes_AS_STRING(
       PyUnicode_AsEncodedString(py_model_state_names_[STATE_IDX].ptr(), "UTF-8", "strict")));
   }
@@ -58,7 +58,7 @@ SimplePyModel::SimplePyModel(
   // them in py_model_input_names
   py::list py_model_input_names_ = py_model_class.attr("get_action_names")();
   num_inputs_py = py_model_input_names_.size();
-  for (int INPUT_IDX = 0; INPUT_IDX < num_inputs_py; INPUT_IDX++) {
+  for (std::size_t INPUT_IDX = 0; INPUT_IDX < num_inputs_py; INPUT_IDX++) {
     py_model_input_names.push_back(PyBytes_AS_STRING(
       PyUnicode_AsEncodedString(py_model_input_names_[INPUT_IDX].ptr(), "UTF-8", "strict")));
   }

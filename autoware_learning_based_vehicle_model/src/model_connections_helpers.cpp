@@ -43,7 +43,7 @@ std::vector<int> createConnectionsMap(
     for (std::size_t NAME_1_IDX = 0; NAME_1_IDX < connection_names_1.size(); NAME_1_IDX++) {
       if (strcmp(name_2, connection_names_1[NAME_1_IDX]) == 0) {  // 0 means strings are the same
                                                                   // and we can create connection
-        mapped_idx = NAME_1_IDX;
+        mapped_idx = static_cast<int>(NAME_1_IDX);
         break;
       }
     }

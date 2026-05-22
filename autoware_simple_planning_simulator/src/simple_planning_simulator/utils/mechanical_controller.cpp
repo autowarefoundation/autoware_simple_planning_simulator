@@ -130,8 +130,8 @@ bool SteeringDynamics::is_in_dead_zone(
   const SteeringDynamicsState & state, const double input_torque) const
 {
   bool is_in_dead_zone = state.is_in_dead_zone;
-  const int rotation_direction = sign(state.angular_velocity);
-  const int input_direction = sign(input_torque);
+  const int rotation_direction = static_cast<int>(sign(state.angular_velocity));
+  const int input_direction = static_cast<int>(sign(input_torque));
 
   if (input_direction != rotation_direction && std::abs(input_torque) < dead_zone_threshold_) {
     return true;

@@ -43,7 +43,9 @@ pcl::PointXYZ getPointWrtBaseLink(
   const tf2::Transform & tf_base_link2moved_object, double x, double y, double z)
 {
   const auto p_wrt_base = tf_base_link2moved_object(tf2::Vector3(x, y, z));
-  return pcl::PointXYZ(p_wrt_base.x(), p_wrt_base.y(), p_wrt_base.z());
+  return pcl::PointXYZ(
+    static_cast<float>(p_wrt_base.x()), static_cast<float>(p_wrt_base.y()),
+    static_cast<float>(p_wrt_base.z()));
 }
 
 void ObjectCentricPointCloudCreator::create_object_pointcloud(
@@ -108,10 +110,14 @@ void ObjectCentricPointCloudCreator::create_object_pointcloud(
     if (angle < horizontal_min_theta || angle > horizontal_max_theta) {
       continue;
     }
-    int index = (angle - horizontal_min_theta) / horizontal_theta_step;
+    const auto index = static_cast<size_t>(
+      (angle - horizontal_min_theta) / horizontal_theta_step);
+    if (index >= ranges_size) {
+      continue;
+    }
     if (range < horizontal_ray_traced_2d_pointcloud[index]) {
       horizontal_ray_traced_2d_pointcloud[index] = range;
-      horizontal_ray_traced_pointcloud_indices.at(index) = i;
+      horizontal_ray_traced_pointcloud_indices.at(index) = static_cast<int>(i);
     }
   }
 
@@ -127,11 +133,11 @@ void ObjectCentricPointCloudCreator::create_object_pointcloud(
         const double z = distance * std::tan(vertical_theta);
         if (min_z <= z && z <= max_z + epsilon) {
           pcl::PointXYZ point;
-          point.x =
-            horizontal_candidate_pointcloud.at(pointcloud_index).x + x_random(random_generator);
-          point.y =
-            horizontal_candidate_pointcloud.at(pointcloud_index).y + y_random(random_generator);
-          point.z = z + z_random(random_generator);
+          point.x = static_cast<float>(
+            horizontal_candidate_pointcloud.at(pointcloud_index).x + x_random(random_generator));
+          point.y = static_cast<float>(
+            horizontal_candidate_pointcloud.at(pointcloud_index).y + y_random(random_generator));
+          point.z = static_cast<float>(z + z_random(random_generator));
           pointcloud->push_back(point);
         }
       }
@@ -247,8 +253,9 @@ std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> EgoCentricPointCloudCreator::cr
         if (min_z_here <= z && z <= max_z_here + epsilon) {
           pointclouds.at(idx_hit)->push_back(
             pcl::PointXYZ(
-              x_hit + x_random(random_generator), y_hit + y_random(random_generator),
-              z + z_random(random_generator)));
+              static_cast<float>(x_hit + x_random(random_generator)),
+              static_cast<float>(y_hit + y_random(random_generator)),
+              static_cast<float>(z + z_random(random_generator))));
         }
       }
     }

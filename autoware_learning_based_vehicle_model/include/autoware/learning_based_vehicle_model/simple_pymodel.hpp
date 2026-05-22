@@ -22,6 +22,7 @@
 #include <pybind11/embed.h>
 #include <pybind11/stl.h>
 
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -39,8 +40,8 @@ class SimplePyModel : public SubModelInterface
 private:
   std::string py_model_import_name;
 
-  int num_inputs_py;
-  int num_outputs_py;
+  std::size_t num_inputs_py;
+  std::size_t num_outputs_py;
 
   py::object py_model_class;
 

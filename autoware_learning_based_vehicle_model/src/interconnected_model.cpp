@@ -65,7 +65,7 @@ void InterconnectedModel::generateConnections(
   getSignalNames(in_names, out_names);
   num_signals = signals_vec_names.size();
   // Init vector of signal values
-  for (int i = 0; i < num_signals; i++) model_signals_vec.push_back(0);
+  for (std::size_t i = 0; i < num_signals; i++) model_signals_vec.push_back(0.0);
 
   // For every sub-model create mapping from vector of signals to inputs and outputs
   for (auto & submodel : submodels) {

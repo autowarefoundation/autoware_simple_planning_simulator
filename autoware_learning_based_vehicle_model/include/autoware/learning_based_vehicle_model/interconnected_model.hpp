@@ -24,6 +24,7 @@
 #include <pybind11/stl.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <memory>
 #include <string>
 #include <tuple>
@@ -39,7 +40,7 @@ class __attribute__((visibility("default"))) InterconnectedModel
   // Vector of unique names of inputs and outputs of sub-models
   std::vector<char *> signals_vec_names;
   std::vector<double> model_signals_vec;
-  int num_signals;
+  std::size_t num_signals;
 
   std::vector<std::unique_ptr<SubModelInterface>> submodels;
 

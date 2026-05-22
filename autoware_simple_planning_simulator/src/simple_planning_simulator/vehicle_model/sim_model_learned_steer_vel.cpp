@@ -86,7 +86,9 @@ void SimModelLearnedSteerVel::update(const double & dt)
   std::vector<double> vehicle_state_ = vehicle.updatePyModel(vehicle_input_);
 
   // std::vector<double> to Eigen::VectorXd
-  for (size_t i = 0; i < vehicle_state_.size(); i++) state_[i] = vehicle_state_[i];
+  for (size_t i = 0; i < vehicle_state_.size(); i++) {
+    state_[static_cast<Eigen::Index>(i)] = vehicle_state_[i];
+  }
 
   // Calculate
   current_ax_ = (input_(IDX_U::VX_DES) - prev_vx_) / dt;
