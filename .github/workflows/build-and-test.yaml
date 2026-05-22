@@ -1,0 +1,49 @@
+name: build-and-test
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  bnt:
+    strategy:
+      fail-fast: false
+      matrix:
+        rosdistro: [humble, jazzy]
+        above: [false, true]
+        enable-agnocast: [false, true]
+        exclude:
+          - above: true
+            enable-agnocast: true
+        include:
+          - rosdistro: humble
+            above: false
+            container: ghcr.io/autowarefoundation/autoware:core-dependencies-humble
+          - rosdistro: humble
+            above: true
+            container: ghcr.io/autowarefoundation/autoware:universe-dependencies-humble
+
+          - rosdistro: jazzy
+            above: false
+            container: ghcr.io/autowarefoundation/autoware:core-dependencies-jazzy
+          - rosdistro: jazzy
+            above: true
+            container: ghcr.io/autowarefoundation/autoware:universe-dependencies-jazzy
+
+    uses: ./.github/workflows/build-and-test-reusable.yaml
+
+    with:
+      rosdistro: ${{ matrix.rosdistro }}
+      container: ${{ matrix.container }}
+      pull-ccache: false
+      push-ccache: true
+      cache-key-element: build
+      above: ${{ matrix.above }}
+      enable-agnocast: ${{ matrix.enable-agnocast }}
+      codecov-flag: total-${{ matrix.rosdistro }}${{ matrix.enable-agnocast && '-agnocast' || '' }}
+      concurrency-group: build-and-test-${{ matrix.rosdistro }}${{ matrix.above && '-above' || '' }}${{ matrix.enable-agnocast && '-agnocast' || '' }}-${{ github.ref }}-${{ github.run_id }}
+      runner: ${{ matrix.above && '["self-hosted","Linux","X64"]' || '["ubuntu-latest"]' }}
+
+    secrets:
+      codecov-token: ${{ secrets.CODECOV_TOKEN }}
