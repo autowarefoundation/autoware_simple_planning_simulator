@@ -12,16 +12,20 @@ on:
         type: string
         default: "['ubuntu-latest']"
         required: false
-      container:
+      base_image_stage:
+        type: string
+        default: core-devel
+        required: false
+      ros_distro:
         required: true
         type: string
+      autoware_version:
+        type: string
+        default: 1.8.0
+        required: false
       above:
         required: true
         type: boolean
-      rosdistro:
-        default: humble
-        required: false
-        type: string
       run-condition:
         default: true
         required: false
@@ -38,7 +42,7 @@ jobs:
     if: ${{ inputs.run-condition }}
     runs-on: ${{ fromJson(inputs.runner) }}
     container:
-      image: ${{ inputs.container }}
+      image: ghcr.io/autowarefoundation/autoware:${{ inputs.base_image_stage }}-${{ inputs.ros_distro }}-${{ inputs.autoware_version }}
       options: --cap-add=NET_ADMIN
     steps:
       - name: Set PR fetch depth
@@ -81,9 +85,9 @@ jobs:
         with:
           path: |
             /root/.ccache
-          key: ccache-main-${{ runner.arch }}-${{ inputs.rosdistro }}${{ inputs.above && '-above' || '' }}-${{ github.event.pull_request.base.sha }}
+          key: ccache-main-${{ runner.arch }}-${{ inputs.ros_distro }}${{ inputs.above && '-above' || '' }}-${{ github.event.pull_request.base.sha }}
           restore-keys: |
-            ccache-main-${{ runner.arch }}-${{ inputs.rosdistro }}${{ inputs.above && '-above' || '' }}-
+            ccache-main-${{ runner.arch }}-${{ inputs.ros_distro }}${{ inputs.above && '-above' || '' }}-
 
       - name: Limit ccache size
         run: |
@@ -113,7 +117,7 @@ jobs:
         if: ${{ steps.get-modified-packages.outputs.modified-packages != '' }}
         uses: autowarefoundation/autoware-github-actions/colcon-build@v1
         with:
-          rosdistro: ${{ inputs.rosdistro }}
+          rosdistro: ${{ inputs.ros_distro }}
           target-packages: ${{ steps.get-modified-packages.outputs.modified-packages }}
           cache-key-element: build-and-test-diff${{ inputs.above && '-above' || '' }}
           packages-above-repos: ${{ inputs.above && 'packages_above.repos' || '' }}
@@ -129,7 +133,7 @@ jobs:
         if: ${{ steps.get-modified-packages.outputs.modified-packages != '' }}
         uses: autowarefoundation/autoware-github-actions/colcon-test@v1
         with:
-          rosdistro: ${{ inputs.rosdistro }}
+          rosdistro: ${{ inputs.ros_distro }}
           target-packages: ${{ steps.get-modified-packages.outputs.modified-packages }}
           underlay-workspace: /opt/autoware
 
@@ -140,7 +144,7 @@ jobs:
           files: ${{ steps.test.outputs.coverage-report-files }}
           fail_ci_if_error: false
           verbose: true
-          flags: differential-${{ inputs.rosdistro }}
+          flags: differential-${{ inputs.ros_distro }}
           token: ${{ secrets.codecov-token }}
 
       - name: Show disk space after the tasks
@@ -152,7 +156,7 @@ jobs:
     needs: build-and-test-differential
     if: ${{ !inputs.above && inputs.run-condition }}
     runs-on: ${{ fromJson(inputs.runner) }}
-    container: ${{ inputs.container }}
+    container: ghcr.io/autowarefoundation/autoware:${{ inputs.base_image_stage }}-${{ inputs.ros_distro }}-${{ inputs.autoware_version }}
     steps:
       - name: Set PR fetch depth
         run: echo "PR_FETCH_DEPTH=$(( ${{ github.event.pull_request.commits }} + 1 ))" >> "${GITHUB_ENV}"
@@ -200,13 +204,13 @@ jobs:
         if: ${{ steps.get-changed-files.outputs.changed-files != '' }}
         uses: autowarefoundation/autoware-github-actions/clang-tidy@v1
         with:
-          rosdistro: ${{ inputs.rosdistro }}
+          rosdistro: ${{ inputs.ros_distro }}
           cache-key-element: build-and-test-diff${{ inputs.above && '-above' || '' }}
           target-packages: ${{ steps.get-modified-packages.outputs.modified-packages }}
           target-files: ${{ steps.get-changed-files.outputs.changed-files }}
           clang-tidy-config-url: https://raw.githubusercontent.com/autowarefoundation/autoware_core/main/.clang-tidy-ci
           underlay-workspace: /opt/autoware
-          artifact-name: clang-tidy-result-${{ inputs.rosdistro }}
+          artifact-name: clang-tidy-result-${{ inputs.ros_distro }}
 
       - name: Show disk space after the tasks
         run: df -h

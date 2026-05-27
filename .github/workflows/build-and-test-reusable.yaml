@@ -12,12 +12,17 @@ on:
         type: string
         default: "['ubuntu-latest']"
         required: false
-      rosdistro:
+      base_image_stage:
+        type: string
+        default: core-devel
+        required: false
+      ros_distro:
         type: string
         required: true
-      container:
+      autoware_version:
         type: string
-        required: true
+        default: 1.8.0
+        required: false
       above:
         description: True if packages above repos should be considered. Clang-tidy will only run if this is false.
         type: boolean
@@ -59,10 +64,10 @@ env:
 
 jobs:
   build-and-test:
-    name: build-and-test-${{ inputs.rosdistro }}${{ inputs.above && '-above' || '' }}
+    name: build-and-test-${{ inputs.ros_distro }}${{ inputs.above && '-above' || '' }}
     runs-on: ${{ fromJson(inputs.runner) }}
     container:
-      image: ${{ inputs.container }}
+      image: ghcr.io/autowarefoundation/autoware:${{ inputs.base_image_stage }}-${{ inputs.ros_distro }}-${{ inputs.autoware_version }}
       options: --cap-add=NET_ADMIN
     steps:
       - name: Check out repository
@@ -97,9 +102,9 @@ jobs:
         with:
           path: |
             /root/.ccache
-          key: ccache-main-${{ runner.arch }}-${{ inputs.rosdistro }}${{ inputs.above && '-above' || '' }}-${{ github.sha }}
+          key: ccache-main-${{ runner.arch }}-${{ inputs.ros_distro }}${{ inputs.above && '-above' || '' }}-${{ github.sha }}
           restore-keys: |
-            ccache-main-${{ runner.arch }}-${{ inputs.rosdistro }}${{ inputs.above && '-above' || '' }}-
+            ccache-main-${{ runner.arch }}-${{ inputs.ros_distro }}${{ inputs.above && '-above' || '' }}-
 
       - name: Limit ccache size
         run: |
@@ -129,7 +134,7 @@ jobs:
         if: ${{ steps.get-self-packages.outputs.self-packages != '' }}
         uses: autowarefoundation/autoware-github-actions/colcon-build@v1
         with:
-          rosdistro: ${{ inputs.rosdistro }}
+          rosdistro: ${{ inputs.ros_distro }}
           cache-key-element: build-and-test-${{ inputs.cache-key-element }}${{ inputs.above && '-above' || '' }}
           target-packages: ${{ steps.get-self-packages.outputs.self-packages }}
           packages-above-repos: ${{ inputs.above && 'packages_above.repos' || '' }}
@@ -146,14 +151,14 @@ jobs:
         with:
           path: |
             /root/.ccache
-          key: ccache-main-${{ runner.arch }}-${{ inputs.rosdistro }}${{ inputs.above && '-above' || '' }}-${{ github.sha }}
+          key: ccache-main-${{ runner.arch }}-${{ inputs.ros_distro }}${{ inputs.above && '-above' || '' }}-${{ github.sha }}
 
       - name: Test
         if: ${{ steps.get-self-packages.outputs.self-packages != '' }}
         id: test
         uses: autowarefoundation/autoware-github-actions/colcon-test@v1
         with:
-          rosdistro: ${{ inputs.rosdistro }}
+          rosdistro: ${{ inputs.ros_distro }}
           target-packages: ${{ steps.get-self-packages.outputs.self-packages }}
           underlay-workspace: /opt/autoware
 
@@ -171,11 +176,11 @@ jobs:
         run: df -h
 
   clang-tidy:
-    name: clang-tidy-${{ inputs.rosdistro }}${{ inputs.above && '-above' || '' }}
+    name: clang-tidy-${{ inputs.ros_distro }}${{ inputs.above && '-above' || '' }}
     needs: build-and-test
     if: ${{ !inputs.above }}
     runs-on: ubuntu-latest
-    container: ${{ inputs.container }}
+    container: ghcr.io/autowarefoundation/autoware:${{ inputs.base_image_stage }}-${{ inputs.ros_distro }}-${{ inputs.autoware_version }}
     steps:
       - name: Checkout PR branch and all PR commits
         uses: actions/checkout@v6
@@ -194,12 +199,12 @@ jobs:
         if: ${{ steps.get-self-packages.outputs.self-packages != '' }}
         uses: autowarefoundation/autoware-github-actions/clang-tidy@v1
         with:
-          rosdistro: ${{ inputs.rosdistro }}
+          rosdistro: ${{ inputs.ros_distro }}
           cache-key-element: build-and-test-${{ inputs.cache-key-element }}${{ inputs.above && '-above' || '' }}
           target-packages: ${{ steps.get-self-packages.outputs.self-packages }}
           clang-tidy-config-url: https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/.clang-tidy-ci
           underlay-workspace: /opt/autoware
-          artifact-name: clang-tidy-result-${{ inputs.rosdistro }}
+          artifact-name: clang-tidy-result-${{ inputs.ros_distro }}
 
       - name: Show disk space after the tasks
         run: df -h

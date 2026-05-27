@@ -61,23 +61,8 @@ jobs:
       - require-label
     uses: ./.github/workflows/build-and-test-diff-reusable.yaml
     with:
-      rosdistro: humble
-      container: ghcr.io/autowarefoundation/autoware:core-dependencies-humble
+      ros_distro: humble
       above: false
-      run-condition: ${{ needs.require-label.outputs.result == 'true' }}
-    secrets:
-      codecov-token: ${{ secrets.CODECOV_TOKEN }}
-
-  build-and-test-diff-humble-above:
-    if: ${{ always() }}
-    needs:
-      - require-label
-    uses: ./.github/workflows/build-and-test-diff-reusable.yaml
-    with:
-      rosdistro: humble
-      runner: "['self-hosted', 'Linux', 'X64']"
-      container: ghcr.io/autowarefoundation/autoware:universe-dependencies-humble
-      above: true
       run-condition: ${{ needs.require-label.outputs.result == 'true' }}
     secrets:
       codecov-token: ${{ secrets.CODECOV_TOKEN }}
@@ -88,23 +73,8 @@ jobs:
       - require-label
     uses: ./.github/workflows/build-and-test-diff-reusable.yaml
     with:
-      rosdistro: jazzy
-      container: ghcr.io/autowarefoundation/autoware:core-dependencies-jazzy
+      ros_distro: jazzy
       above: false
-      run-condition: ${{ needs.require-label.outputs.result == 'true' }}
-    secrets:
-      codecov-token: ${{ secrets.CODECOV_TOKEN }}
-
-  build-and-test-diff-jazzy-above:
-    if: ${{ always() }}
-    needs:
-      - require-label
-    uses: ./.github/workflows/build-and-test-diff-reusable.yaml
-    with:
-      rosdistro: jazzy
-      runner: "['self-hosted', 'Linux', 'X64']"
-      container: ghcr.io/autowarefoundation/autoware:universe-dependencies-jazzy
-      above: true
       run-condition: ${{ needs.require-label.outputs.result == 'true' }}
     secrets:
       codecov-token: ${{ secrets.CODECOV_TOKEN }}
