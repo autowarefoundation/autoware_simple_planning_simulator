@@ -62,6 +62,7 @@ jobs:
     uses: ./.github/workflows/build-and-test-diff-reusable.yaml
     with:
       ros_distro: humble
+      container: ghcr.io/autowarefoundation/autoware:core-devel-humble
       above: false
       run-condition: ${{ needs.require-label.outputs.result == 'true' }}
     secrets:
@@ -74,6 +75,7 @@ jobs:
     uses: ./.github/workflows/build-and-test-diff-reusable.yaml
     with:
       ros_distro: jazzy
+      container: ghcr.io/autowarefoundation/autoware:core-devel-jazzy
       above: false
       run-condition: ${{ needs.require-label.outputs.result == 'true' }}
     secrets:

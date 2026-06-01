@@ -12,17 +12,12 @@ on:
         type: string
         default: "['ubuntu-latest']"
         required: false
-      base_image_stage:
-        type: string
-        default: core-devel
-        required: false
       ros_distro:
         type: string
         required: true
-      autoware_version:
+      container:
         type: string
-        default: 1.8.0
-        required: false
+        required: true
       above:
         description: True if packages above repos should be considered. Clang-tidy will only run if this is false.
         type: boolean
@@ -67,7 +62,7 @@ jobs:
     name: build-and-test-${{ inputs.ros_distro }}${{ inputs.above && '-above' || '' }}
     runs-on: ${{ fromJson(inputs.runner) }}
     container:
-      image: ghcr.io/autowarefoundation/autoware:${{ inputs.base_image_stage }}-${{ inputs.ros_distro }}-${{ inputs.autoware_version }}
+      image: ${{ inputs.container }}
       options: --cap-add=NET_ADMIN
     steps:
       - name: Check out repository
@@ -180,7 +175,7 @@ jobs:
     needs: build-and-test
     if: ${{ !inputs.above }}
     runs-on: ubuntu-latest
-    container: ghcr.io/autowarefoundation/autoware:${{ inputs.base_image_stage }}-${{ inputs.ros_distro }}-${{ inputs.autoware_version }}
+    container: ${{ inputs.container }}
     steps:
       - name: Checkout PR branch and all PR commits
         uses: actions/checkout@v6

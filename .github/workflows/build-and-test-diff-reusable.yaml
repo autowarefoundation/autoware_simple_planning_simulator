@@ -12,17 +12,12 @@ on:
         type: string
         default: "['ubuntu-latest']"
         required: false
-      base_image_stage:
+      container:
+        required: true
         type: string
-        default: core-devel
-        required: false
       ros_distro:
         required: true
         type: string
-      autoware_version:
-        type: string
-        default: 1.8.0
-        required: false
       above:
         required: true
         type: boolean
@@ -42,7 +37,7 @@ jobs:
     if: ${{ inputs.run-condition }}
     runs-on: ${{ fromJson(inputs.runner) }}
     container:
-      image: ghcr.io/autowarefoundation/autoware:${{ inputs.base_image_stage }}-${{ inputs.ros_distro }}-${{ inputs.autoware_version }}
+      image: ${{ inputs.container }}
       options: --cap-add=NET_ADMIN
     steps:
       - name: Set PR fetch depth
@@ -156,7 +151,7 @@ jobs:
     needs: build-and-test-differential
     if: ${{ !inputs.above && inputs.run-condition }}
     runs-on: ${{ fromJson(inputs.runner) }}
-    container: ghcr.io/autowarefoundation/autoware:${{ inputs.base_image_stage }}-${{ inputs.ros_distro }}-${{ inputs.autoware_version }}
+    container: ${{ inputs.container }}
     steps:
       - name: Set PR fetch depth
         run: echo "PR_FETCH_DEPTH=$(( ${{ github.event.pull_request.commits }} + 1 ))" >> "${GITHUB_ENV}"

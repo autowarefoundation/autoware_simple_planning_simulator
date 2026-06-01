@@ -11,11 +11,17 @@ jobs:
       fail-fast: false
       matrix:
         rosdistro: [humble, jazzy]
+        include:
+          - rosdistro: humble
+            container: ghcr.io/autowarefoundation/autoware:core-devel-humble
+          - rosdistro: jazzy
+            container: ghcr.io/autowarefoundation/autoware:core-devel-jazzy
 
     uses: ./.github/workflows/build-and-test-reusable.yaml
 
     with:
       ros_distro: ${{ matrix.rosdistro }}
+      container: ${{ matrix.container }}
       pull-ccache: false
       push-ccache: true
       cache-key-element: build
