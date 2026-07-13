@@ -2,6 +2,10 @@
 Changelog for package autoware_learning_based_vehicle_model
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.51.0 (2026-07-13)
+-------------------
+* THIS LINE WAS ADDED MANUALLY TO HANDLE WITH VERSION MISMATCH
+
 0.50.0 (2026-02-14)
 -------------------
 
