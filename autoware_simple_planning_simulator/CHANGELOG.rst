@@ -2,8 +2,8 @@
 Changelog for package autoware_simple_planning_simulator
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.0.0 (2026-07-13)
+------------------
 * fix(simple_planning_simulator): latch initial pose Z until new trajectory (`#9 <https://github.com/autowarefoundation/autoware_simple_planning_simulator/issues/9>`_)
   * fix(simple_planning_simulator): latch initial pose Z until new trajectory
   PSIM re-init via /initialpose3d was overwritten on the next timer tick by
