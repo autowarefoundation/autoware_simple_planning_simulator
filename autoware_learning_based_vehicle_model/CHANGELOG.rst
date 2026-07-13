@@ -2,6 +2,14 @@
 Changelog for package autoware_learning_based_vehicle_model
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.0.0 (2026-07-13)
+------------------
+* fix(`autoware_learning_based_vehicle_model`): mismatched version (`#10 <https://github.com/autowarefoundation/autoware_simple_planning_simulator/issues/10>`_)
+  * fix: mismatched version
+  * fix: CHANGELOG.rst to handle with version mismatch
+  ---------
+* Contributors: Junya Sasaki
+
 0.51.0 (2026-07-13)
 -------------------
 * THIS LINE WAS ADDED MANUALLY TO HANDLE WITH VERSION MISMATCH
