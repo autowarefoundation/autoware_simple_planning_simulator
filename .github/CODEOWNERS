@@ -1,0 +1,6 @@
+### Automatically generated from package.xml ###
+autoware_dummy_perception_publisher/** junya.sasaki@tier4.jp yukihiro.saito@tier4.jp @autowarefoundation/autoware-core-global-codeowners
+autoware_learning_based_vehicle_model/** junya.sasaki@tier4.jp maxime.clement@tier4.jp nagy.tomas@tier4.jp @autowarefoundation/autoware-core-global-codeowners
+autoware_simple_planning_simulator/** junya.sasaki@tier4.jp kotaro.yoshimoto@tier4.jp mamoru.sobue@tier4.jp maxime.clement@tier4.jp takamasa.horibe@tier4.jp temkei.kem@tier4.jp tomoya.kimura@tier4.jp zulfaqar.azmi@tier4.jp @autowarefoundation/autoware-core-global-codeowners
+
+### Copied from .github/CODEOWNERS-manual ###
