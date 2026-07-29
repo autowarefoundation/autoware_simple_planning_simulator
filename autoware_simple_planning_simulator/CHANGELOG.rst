@@ -2,6 +2,20 @@
 Changelog for package autoware_simple_planning_simulator
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.0.0 (2026-07-13)
+------------------
+* fix(simple_planning_simulator): latch initial pose Z until new trajectory (`#9 <https://github.com/autowarefoundation/autoware_simple_planning_simulator/issues/9>`_)
+  * fix(simple_planning_simulator): latch initial pose Z until new trajectory
+  PSIM re-init via /initialpose3d was overwritten on the next timer tick by
+  stale trajectory or historical Z. Latch map-fitted Z from initial pose and
+  release only when a newer trajectory message arrives.
+  Cherry-picked from `tier4/autoware_universe#3179 <https://github.com/tier4/autoware_universe/issues/3179>`_ onto autowarefoundation/main.
+  Co-authored-by: Cursor <cursoragent@cursor.com>
+  * feat: improve the logic statement
+  ---------
+  Co-authored-by: Cursor <cursoragent@cursor.com>
+* Contributors: Yuxuan Liu
+
 0.51.0 (2026-05-01)
 -------------------
 * Merge remote-tracking branch 'origin/main' into tmp/bot/bump_version_base
