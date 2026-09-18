@@ -214,5 +214,26 @@ processes:
       - to_output: localization/kinematic_state
       - to_output: localization/acceleration
       - to_output: sensing/imu/imu_data
-      - to_output: simulation/debug/localization/pose_estimator/pose_with_covariance
-      - to_output: tf
+  - name: apply_control_command
+    trigger_conditions:
+      - on_input: control/command/control_cmd
+      - on_input: control/command/actuation_cmd
+      - on_input: vehicle/command/manual_control_cmd
+    outcomes:
+      - terminal: null
+  - name: apply_gear_command
+    trigger_conditions:
+      - on_input: control/command/gear_cmd
+      - on_input: vehicle/command/manual_gear_command
+    outcomes:
+      - terminal: null
+  - name: apply_turn_indicators_command
+    trigger_conditions:
+      - on_input: control/command/turn_indicators_cmd
+    outcomes:
+      - terminal: null
+  - name: apply_hazard_lights_command
+    trigger_conditions:
+      - on_input: control/command/hazard_lights_cmd
+    outcomes:
+      - terminal: null
