@@ -2,8 +2,8 @@
 Changelog for package autoware_simple_planning_simulator
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.1.0 (2026-09-22)
+------------------
 * refactor: migrate SimplePlanningSimulator node design file from autoware_universe (`#17 <https://github.com/autowarefoundation/autoware_simple_planning_simulator/issues/17>`_)
   Placed at the in-package convention, alongside
   autoware_dummy_perception_publisher/design/DummyPerceptionPublisher.node.yaml.
