@@ -2,6 +2,14 @@
 Changelog for package autoware_simple_planning_simulator
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* refactor: migrate SimplePlanningSimulator node design file from autoware_universe (`#17 <https://github.com/autowarefoundation/autoware_simple_planning_simulator/issues/17>`_)
+  Placed at the in-package convention, alongside
+  autoware_dummy_perception_publisher/design/DummyPerceptionPublisher.node.yaml.
+  Co-authored-by: Claude Fable 5 <noreply@anthropic.com>
+* Contributors: Taekjin LEE
+
 1.0.0 (2026-07-13)
 ------------------
 * fix(simple_planning_simulator): latch initial pose Z until new trajectory (`#9 <https://github.com/autowarefoundation/autoware_simple_planning_simulator/issues/9>`_)
