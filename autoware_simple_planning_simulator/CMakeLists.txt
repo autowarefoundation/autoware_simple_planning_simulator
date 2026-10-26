@@ -42,6 +42,13 @@ if(BUILD_TESTING)
     ${PROJECT_NAME}
     ament_index_cpp::ament_index_cpp
   )
+
+  ament_add_ros_isolated_gtest(test_sim_model_delay_steer_acc_geared_wo_fall_guard
+    test/test_sim_model_delay_steer_acc_geared_wo_fall_guard.cpp
+  )
+  target_link_libraries(test_sim_model_delay_steer_acc_geared_wo_fall_guard
+    ${PROJECT_NAME}
+  )
 endif()
 
 ament_auto_package(INSTALL_TO_SHARE param data launch test)

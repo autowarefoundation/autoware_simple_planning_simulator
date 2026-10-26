@@ -162,6 +162,8 @@ param_values:
     default: 1.0
   - name: debug_steer_scaling_factor
     default: 1.0
+  - name: k_us
+    default: 0.0
 
   - name: vehicle_model_type
     default: DELAY_STEER_ACC_GEARED
