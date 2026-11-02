@@ -1,7 +1,8 @@
-autoware_system_design_format: 0.3.0
+autoware_system_design_format: 0.4.0
 
 # node information
 name: SimplePlanningSimulator.node
+description: Kinematic vehicle simulator that integrates control commands into a simulated pose, twist and vehicle status for planning simulation.
 
 package:
   name: autoware_simple_planning_simulator
@@ -15,194 +16,266 @@ launch:
 # interfaces
 subscribers:
   - name: map/vector_map
+    description: Lanelet2 map used for road slope simulation.
     message_type: autoware_map_msgs/msg/LaneletMapBin
     remap_target: input/vector_map
   - name: initialpose3d
+    description: Initial pose that places the simulated vehicle.
     message_type: geometry_msgs/msg/PoseWithCovarianceStamped
     remap_target: input/initialpose
   - name: simulation/input/initialtwist
+    description: Initial twist applied together with the initial pose.
     message_type: geometry_msgs/msg/TwistStamped
     remap_target: input/initialtwist
   - name: planning/trajectory
+    description: Planned trajectory; its height is tracked by the simulated pose.
     message_type: autoware_planning_msgs/msg/Trajectory
     remap_target: input/trajectory
   - name: vehicle/engage
+    description: Engage flag that allows the vehicle to move on control commands.
     message_type: autoware_vehicle_msgs/msg/Engage
     remap_target: input/engage
   - name: vehicle/command/manual_control_cmd
+    description: Control command applied in manual control mode.
     message_type: autoware_control_msgs/msg/Control
     remap_target: input/manual_ackermann_control_command
   - name: vehicle/command/manual_gear_command
+    description: Gear command applied in manual control mode.
     message_type: autoware_vehicle_msgs/msg/GearCommand
     remap_target: input/manual_gear_command
   - name: control/command/control_cmd
+    description: Control command applied in autonomous control mode.
     message_type: autoware_control_msgs/msg/Control
     remap_target: input/ackermann_control_command
   - name: control/command/actuation_cmd
+    description: Actuation command applied by the ACTUATION_CMD vehicle models.
     message_type: tier4_vehicle_msgs/msg/ActuationCommandStamped
     remap_target: input/actuation_command
   - name: control/command/gear_cmd
+    description: Gear command applied in autonomous control mode.
     message_type: autoware_vehicle_msgs/msg/GearCommand
     remap_target: input/gear_command
   - name: control/command/turn_indicators_cmd
+    description: Turn indicator command reflected in the simulated status.
     message_type: autoware_vehicle_msgs/msg/TurnIndicatorsCommand
     remap_target: input/turn_indicators_command
   - name: control/command/hazard_lights_cmd
+    description: Hazard lights command reflected in the simulated status.
     message_type: autoware_vehicle_msgs/msg/HazardLightsCommand
     remap_target: input/hazard_lights_command
 
 publishers:
   - name: vehicle/status/velocity_status
+    description: Simulated longitudinal and lateral velocity report.
     message_type: autoware_vehicle_msgs/msg/VelocityReport
     remap_target: output/twist
   - name: vehicle/status/steering_status
+    description: Simulated steering angle.
     message_type: autoware_vehicle_msgs/msg/SteeringReport
     remap_target: output/steering
   - name: vehicle/status/gear_status
+    description: Current gear of the simulated vehicle.
     message_type: autoware_vehicle_msgs/msg/GearReport
     remap_target: output/gear_report
   - name: vehicle/status/turn_indicators_status
+    description: Turn indicator state following the last command.
     message_type: autoware_vehicle_msgs/msg/TurnIndicatorsReport
     remap_target: output/turn_indicators_report
   - name: vehicle/status/hazard_lights_status
+    description: Hazard lights state following the last command.
     message_type: autoware_vehicle_msgs/msg/HazardLightsReport
     remap_target: output/hazard_lights_report
   - name: vehicle/status/control_mode
+    description: Current control mode, autonomous or manual.
     message_type: autoware_vehicle_msgs/msg/ControlModeReport
     remap_target: output/control_mode_report
   - name: vehicle/status/actuation_status
+    description: Simulated accel, brake and steer actuation state.
     message_type: tier4_vehicle_msgs/msg/ActuationStatusStamped
     remap_target: output/actuation_status
   - name: localization/kinematic_state
+    description: Simulated pose and twist of base_link.
     message_type: nav_msgs/msg/Odometry
     remap_target: output/odometry
   - name: localization/acceleration
+    description: Simulated acceleration of the vehicle.
     message_type: geometry_msgs/msg/AccelWithCovarianceStamped
     remap_target: output/acceleration
   - name: sensing/imu/imu_data
+    description: IMU measurement derived from the simulated motion.
     message_type: sensor_msgs/msg/Imu
     remap_target: output/imu
   - name: perception/traffic_light_recognition/traffic_signals
+    description: Traffic signal states for the simulated scene.
     message_type: autoware_perception_msgs/msg/TrafficLightGroupArray
 
 servers:
   - name: api/simulator/set/pose
+    description: Sets the simulated vehicle pose on request.
     message_type: tier4_external_api_msgs/srv/InitializePose
     remap_target: /api/simulator/set/pose
   - name: control/control_mode_request
+    description: Switches the simulated vehicle between autonomous and manual control.
     message_type: autoware_vehicle_msgs/srv/ControlModeCommand
     remap_target: input/control_mode_request
 
 # parameters
 param_files:
   - name: vehicle_info_param_file
+    description: Vehicle dimensions and limits.
     default: $(find-pkg-share autoware_vehicle_info_utils)/config/vehicle_info.param.yaml
   - name: vehicle_characteristics_param_file
+    description: Vehicle characteristics shared with the control stack.
     default: param/vehicle_characteristics.param.yaml
   - name: simulator_model_param_file
+    description: Vehicle model type and its dynamics parameters.
     default: param/simple_planning_simulator_default.param.yaml
 
 param_values:
   - name: simulated_frame_id
+    description: child_frame_id of the published tf.
     default: base_link
   - name: origin_frame_id
+    description: frame_id of the published tf.
     default: map
   - name: add_measurement_noise
+    description: Adds Gaussian noise to the simulated results.
     default: false
   - name: initial_engage_state
+    description: Engage state at start-up.
     default: true
   - name: enable_road_slope_simulation
+    description: Applies the road slope from the lanelet map to the simulated pose.
     default: true
   - name: enable_pub_steer
+    description: Publishes the steering report.
     default: true
   - name: initialize_source
+    description: ORIGIN starts at the map origin; INITIAL_POSE_TOPIC waits for the initial pose.
     default: INITIAL_POSE_TOPIC
 
   - name: timer_sampling_time_ms
+    description: Simulation step period [ms].
     default: 25
 
   - name: pos_noise_stddev
+    description: Standard deviation of the position noise [m].
     default: 0.01
   - name: vel_noise_stddev
+    description: Standard deviation of the longitudinal velocity noise [m/s].
     default: 0.01
   - name: rpy_noise_stddev
+    description: Standard deviation of the Euler angle noise [rad].
     default: 0.0001
   - name: steer_noise_stddev
+    description: Standard deviation of the steering angle noise [rad].
     default: 0.0001
   - name: x_stddev
+    description: Value written to the x entry of the pose covariance.
     default: 0.0001
   - name: y_stddev
+    description: Value written to the y entry of the pose covariance.
     default: 0.0001
 
   - name: vel_lim
+    description: Velocity limit [m/s].
     default: 50.0
   - name: vel_rate_lim
+    description: Acceleration limit [m/s^2].
     default: 7.0
   - name: steer_lim
+    description: Steering angle limit [rad].
     default: 1.0
   - name: steer_rate_lim
+    description: Steering angle rate limit [rad/s].
     default: 5.0
   - name: acc_time_delay
+    description: Dead time of the acceleration input [s].
     default: 0.1
   - name: acc_time_constant
+    description: Time constant of the first-order acceleration dynamics [s].
     default: 0.1
   - name: vel_time_delay
+    description: Dead time of the velocity input [s].
     default: 0.25
   - name: vel_time_constant
+    description: Time constant of the first-order velocity dynamics [s].
     default: 0.5
   - name: steer_time_delay
+    description: Dead time of the steering input [s].
     default: 0.24
   - name: steer_time_constant
+    description: Time constant of the first-order steering dynamics [s].
     default: 0.27
   - name: steer_dead_band
+    description: Dead band of the steering angle [rad].
     default: 0.0
   - name: steer_bias
+    description: Bias added to the steering angle [rad].
     default: 0.0
   - name: debug_acc_scaling_factor
+    description: Scaling factor applied to the acceleration command.
     default: 1.0
   - name: debug_steer_scaling_factor
+    description: Scaling factor applied to the steering command.
     default: 1.0
   - name: k_us
     default: 0.0
 
   - name: vehicle_model_type
+    description: Vehicle dynamics model, e.g. IDEAL_STEER_VEL, DELAY_STEER_ACC_GEARED, ACTUATION_CMD, LEARNED_STEER_VEL.
     default: DELAY_STEER_ACC_GEARED
   - name: model_module_paths
+    description: Python modules implementing the learned vehicle models.
     default:
       - ""
   - name: model_class_names
+    description: Class names of the learned vehicle models.
     default:
       - ""
   - name: model_param_paths
+    description: Parameter files of the learned vehicle models.
     default:
       - ""
 
   - name: wheel_base
+    description: Distance between the front and rear axles [m].
     default: 2.79
   - name: wheel_tread
+    description: Distance between the left and right wheels [m].
     default: 1.64
   - name: wheel_radius
+    description: Wheel radius [m].
     default: 0.383
   - name: wheel_width
+    description: Wheel width [m].
     default: 0.235
   - name: front_overhang
+    description: Distance from the front axle to the front bumper [m].
     default: 1.0
   - name: rear_overhang
+    description: Distance from the rear axle to the rear bumper [m].
     default: 1.1
   - name: left_overhang
+    description: Distance from the left wheel to the left body edge [m].
     default: 0.128
   - name: right_overhang
+    description: Distance from the right wheel to the right body edge [m].
     default: 0.128
   - name: vehicle_height
+    description: Vehicle height [m].
     default: 2.5
   - name: max_steer_angle
+    description: Maximum steering angle of the vehicle [rad].
     default: 0.7
   - name: use_sim_time
+    description: Uses the simulated clock from /clock.
     default: false
 
 # processes
 processes:
   - name: publish_state
+    description: Steps the vehicle model on the simulation timer and publishes the resulting pose, twist and vehicle status.
     trigger_conditions:
       - periodic: 40
     outcomes:
@@ -216,5 +289,30 @@ processes:
       - to_output: localization/kinematic_state
       - to_output: localization/acceleration
       - to_output: sensing/imu/imu_data
-      - to_output: simulation/debug/localization/pose_estimator/pose_with_covariance
-      - to_output: tf
+  - name: apply_control_command
+    description: Holds the latest control, actuation or manual command for the next simulation step.
+    trigger_conditions:
+      - on_input: control/command/control_cmd
+      - on_input: control/command/actuation_cmd
+      - on_input: vehicle/command/manual_control_cmd
+    outcomes:
+      - terminal: null
+  - name: apply_gear_command
+    description: Holds the latest gear command for the next simulation step.
+    trigger_conditions:
+      - on_input: control/command/gear_cmd
+      - on_input: vehicle/command/manual_gear_command
+    outcomes:
+      - terminal: null
+  - name: apply_turn_indicators_command
+    description: Holds the latest turn indicator command for the next status report.
+    trigger_conditions:
+      - on_input: control/command/turn_indicators_cmd
+    outcomes:
+      - terminal: null
+  - name: apply_hazard_lights_command
+    description: Holds the latest hazard lights command for the next status report.
+    trigger_conditions:
+      - on_input: control/command/hazard_lights_cmd
+    outcomes:
+      - terminal: null
