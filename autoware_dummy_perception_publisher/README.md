@@ -28,7 +28,7 @@ All movement plugins inherit from `DummyObjectMovementBasePlugin` which provides
 - **ADD**: New objects are created and they move in a straight line, acceleration and deceleration parameters can be used.
 - **MODIFY**: Handled directly by the node, bypassing plugin movement logic. Immediately replaces the object's position information across all plugins.
 - **DELETE**: The specified object is removed from all plugins.
-- **DELETE_ALL**: Clears all objects from all plugins.
+- **DELETE_ALL**: Clears all objects from all plugins. For `input/static_area`, it clears all stored static areas.
 
 The requested operation is selected via the `action` field in `autoware_simulation_msgs::msg::SimulatedObject`.
 
@@ -40,32 +40,54 @@ The requested operation is selected via the `action` field in `autoware_simulati
 | ------------------- | ------------------------------------------------- | --------------------------------------------------------- |
 | `/tf`               | `tf2_msgs/TFMessage`                              | TF (self-pose)                                            |
 | `input/object`      | `autoware_simulation_msgs::msg::SimulatedObject`  | dummy detection objects                                   |
+| `input/static_area` | `autoware_simulation_msgs::msg::SimulatedObject`  | dummy static areas for point cloud generation             |
 | `predicted_objects` | `autoware_perception_msgs::msg::PredictedObjects` | predicted objects (used by PredictedObjectMovementPlugin) |
 
 ### Output
 
-| Name                                | Type                                             | Description             |
-| ----------------------------------- | ------------------------------------------------ | ----------------------- |
-| `output/dynamic_object`             | `autoware_perception_msgs::msg::DetectedObjects` | dummy detection objects |
-| `output/points_raw`                 | `sensor_msgs::msg::PointCloud2`                  | point cloud of objects  |
-| `output/debug/ground_truth_objects` | `autoware_perception_msgs::msg::TrackedObjects`  | ground truth objects    |
+| Name                                | Type                                             | Description                                                              |
+| ----------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------ |
+| `output/dynamic_object`             | `autoware_perception_msgs::msg::DetectedObjects` | dummy detection objects                                                  |
+| `output/points_raw`                 | `sensor_msgs::msg::PointCloud2`                  | object and static area point clouds converted to the `point_type` layout |
+| `output/debug/ground_truth_objects` | `autoware_perception_msgs::msg::TrackedObjects`  | ground truth objects                                                     |
 
 ## Parameters
 
 ### Core Parameters
 
-| Name                        | Type   | Default Value | Explanation                                        |
-| --------------------------- | ------ | ------------- | -------------------------------------------------- |
-| `visible_range`             | double | 100.0         | sensor visible range [m]                           |
-| `detection_successful_rate` | double | 0.8           | sensor detection rate. (min) 0.0 - 1.0(max)        |
-| `enable_ray_tracing`        | bool   | true          | if True, use ray tracking                          |
-| `use_base_link_z`           | bool   | true          | if True, node uses z coordinate of ego base_link   |
-| `use_fixed_random_seed`     | bool   | false         | if True, use fixed random seed                     |
-| `random_seed`               | int    | 0             | random seed                                        |
-| `object_centric_pointcloud` | bool   | false         | if True, generate object-centric point clouds      |
-| `angle_increment`           | double | 0.004363323   | angle increment for ray tracing (0.25° in radians) |
+| Name                        | Type   | Default Value | Explanation                                                 |
+| --------------------------- | ------ | ------------- | ----------------------------------------------------------- |
+| `visible_range`             | double | 100.0         | sensor visible range [m]                                    |
+| `detection_successful_rate` | double | 0.8           | sensor detection rate. (min) 0.0 - 1.0(max)                 |
+| `enable_ray_tracing`        | bool   | true          | if True, use ray tracking                                   |
+| `use_base_link_z`           | bool   | true          | if True, node uses z coordinate of ego base_link            |
+| `use_fixed_random_seed`     | bool   | false         | if True, use fixed random seed                              |
+| `random_seed`               | int    | 0             | random seed                                                 |
+| `publish_object_pointcloud` | bool   | false         | if True, include object point clouds in `output/points_raw` |
+| `point_type`                | string | `XYZCPE`      | point cloud layout published on `output/points_raw`         |
+| `object_centric_pointcloud` | bool   | false         | if True, generate object-centric point clouds               |
+| `angle_increment`           | double | 0.004363323   | angle increment for ray tracing (0.25° in radians)          |
 
 `output/dynamic_object` is always published. `output/debug/ground_truth_objects` is published only when subscribers exist.
+
+### Static Area Input
+
+`input/static_area` uses `autoware_simulation_msgs::msg::SimulatedObject` on a dedicated topic.
+
+| Field                                | Meaning                                                 |
+| ------------------------------------ | ------------------------------------------------------- |
+| `classification.label`               | `autoware::point_types::PointCloudClassification` value |
+| `classification.probability`         | `PointXYZCPE::probability`                              |
+| `shape.type`                         | `BOUNDING_BOX`                                          |
+| `shape.dimensions.x`                 | static area length                                      |
+| `shape.dimensions.y`                 | static area width                                       |
+| `shape.dimensions.z`                 | static area height                                      |
+| `initial_state.pose_covariance.pose` | static area pose                                        |
+| `action`                             | `ADD`, `MODIFY`, `DELETE`, or `DELETE_ALL`              |
+
+Static areas are stored separately from normal objects. They use the existing object point cloud
+creator, but their `classification.label` is copied directly as `PointCloudClassification` instead
+of being converted from `ObjectClassification`. `DELETE_ALL` clears all stored static areas.
 
 ### PredictedObjectMovementPlugin Parameters
 

@@ -9,6 +9,7 @@
     <push-ros-namespace namespace="simulation"/>
     <node pkg="autoware_dummy_perception_publisher" exec="autoware_dummy_perception_publisher_node" name="dummy_perception_publisher" output="screen">
       <remap from="input/object" to="dummy_perception_publisher/object_info"/>
+      <remap from="input/static_area" to="dummy_perception_publisher/static_area"/>
       <remap from="input/reset" to="input/reset"/>
       <remap from="input/predicted_objects" to="/perception/object_recognition/objects"/>
       <remap from="output/dynamic_object" to="/perception/object_recognition/detection/objects"/>
