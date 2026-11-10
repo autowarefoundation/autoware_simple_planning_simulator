@@ -437,7 +437,7 @@ bool PredictedObjectMovementPlugin::is_valid_remapping_candidate(
     predicted_simulated_objects_tracking_info_.simulated_predicted_info_map;
   auto info_it = simulated_predicted_info_map.find(simulated_uuid_str);
   if (info_it == simulated_predicted_info_map.end()) {
-    return true;  // No last prediction, allow the match
+    return true;  // No tracking info for this object, allow the match
   }
   const auto & last_used_prediction = info_it->second.last_used_prediction;
   if (!last_used_prediction.has_value()) {
@@ -767,16 +767,16 @@ std::vector<ObjectInfo> PredictedObjectMovementPlugin::move_objects()
       const auto & simulated_uuid_str = autoware_utils_uuid::to_hex_string(object.id);
       auto info_it = simulated_predicted_info_map.find(simulated_uuid_str);
 
-      if (
-        info_it != simulated_predicted_info_map.end() &&
-        info_it->second.last_used_prediction.has_value() &&
-        info_it->second.last_used_prediction_time.has_value()) {
-        RCLCPP_DEBUG(
-          rclcpp::get_logger("dummy_perception_publisher"),
-          "Using last known prediction for lost object with ID: %s", simulated_uuid_str.c_str());
-        return create_object_info_with_predicted_path(
-          object, info_it->second.last_used_prediction.value(),
-          info_it->second.last_used_prediction_time.value(), current_time);
+      if (info_it != simulated_predicted_info_map.end()) {
+        const auto & last_used_prediction = info_it->second.last_used_prediction;
+        const auto & last_used_prediction_time = info_it->second.last_used_prediction_time;
+        if (last_used_prediction.has_value() && last_used_prediction_time.has_value()) {
+          RCLCPP_DEBUG(
+            rclcpp::get_logger("dummy_perception_publisher"),
+            "Using last known prediction for lost object with ID: %s", simulated_uuid_str.c_str());
+          return create_object_info_with_predicted_path(
+            object, last_used_prediction.value(), last_used_prediction_time.value(), current_time);
+        }
       }
 
       RCLCPP_DEBUG(
