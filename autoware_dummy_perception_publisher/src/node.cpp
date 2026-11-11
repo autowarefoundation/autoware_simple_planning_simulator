@@ -19,7 +19,6 @@
 #include "autoware/point_types/types.hpp"
 #include "autoware_utils_geometry/geometry.hpp"
 
-#include <autoware/object_recognition_utils/pointcloud_classification.hpp>
 #include <autoware_utils_uuid/uuid_helper.hpp>
 #include <tf2/LinearMath/Quaternion.hpp>
 #include <tf2/LinearMath/Transform.hpp>
@@ -36,13 +35,11 @@
 
 #include <pcl/filters/voxel_grid_occlusion_estimation.h>
 
-#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <functional>
 #include <memory>
 #include <optional>
-#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -57,31 +54,6 @@ using geometry_msgs::msg::PoseStamped;
 using geometry_msgs::msg::Transform;
 using geometry_msgs::msg::TransformStamped;
 
-namespace
-{
-PointType parsePointType(const std::string & point_type)
-{
-  if (point_type == "XYZIRC") {
-    return PointType::XYZIRC;
-  }
-  if (point_type == "XYZCPE") {
-    return PointType::XYZCPE;
-  }
-  throw std::invalid_argument("point_type must be XYZIRC or XYZCPE");
-}
-
-uint8_t toPointCloudClassificationId(
-  const autoware_perception_msgs::msg::ObjectClassification & classification)
-{
-  using autoware::point_types::PointCloudClassification;
-
-  const auto pointcloud_classification =
-    autoware::object_recognition_utils::try_into_pointcloud(classification.label);
-  return static_cast<uint8_t>(
-    pointcloud_classification.value_or(PointCloudClassification::INVALID));
-}
-}  // namespace
-
 DummyPerceptionPublisherNode::DummyPerceptionPublisherNode()
 : Node("dummy_perception_publisher"), tf_buffer_(this->get_clock()), tf_listener_(tf_buffer_)
 {
@@ -89,8 +61,10 @@ DummyPerceptionPublisherNode::DummyPerceptionPublisherNode()
   detection_successful_rate_ = this->declare_parameter("detection_successful_rate", 0.8);
   enable_ray_tracing_ = this->declare_parameter("enable_ray_tracing", true);
   use_base_link_z_ = this->declare_parameter("use_base_link_z", true);
-  publish_object_pointcloud_ = this->declare_parameter("publish_object_pointcloud", false);
-  point_type_ = parsePointType(this->declare_parameter("point_type", std::string{"XYZCPE"}));
+  const bool publish_object_pointcloud =
+    this->declare_parameter("publish_object_pointcloud", false);
+  const auto point_type =
+    parse_point_type(this->declare_parameter("point_type", std::string{"XYZCPE"}));
   const bool object_centric_pointcloud =
     this->declare_parameter("object_centric_pointcloud", false);
   const unsigned int random_seed =
@@ -104,6 +78,8 @@ DummyPerceptionPublisherNode::DummyPerceptionPublisherNode()
     pointcloud_creator_ =
       std::unique_ptr<PointCloudCreator>(new EgoCentricPointCloudCreator(visible_range_));
   }
+  pointcloud_labeler_ = std::make_unique<PointCloudLabeler>(
+    PointCloudLabelerConfig{point_type, publish_object_pointcloud});
 
   // parameters for vehicle centric point cloud generation
   angle_increment_ = this->declare_parameter("angle_increment", 0.25 * M_PI / 180.0);
@@ -138,79 +114,6 @@ DummyPerceptionPublisherNode::DummyPerceptionPublisherNode()
   // Initialize movement plugins directly in the vector
   movement_plugins_.push_back(std::make_shared<pluginlib::StraightLineObjectMovementPlugin>(this));
   movement_plugins_.push_back(std::make_shared<pluginlib::PredictedObjectMovementPlugin>(this));
-}
-
-pcl::PointCloud<autoware::point_types::PointXYZIRC>
-DummyPerceptionPublisherNode::convertPointCloudXYZtoXYZIRC(
-  const pcl::PointCloud<pcl::PointXYZ>::Ptr & input_cloud) const
-{
-  pcl::PointCloud<autoware::point_types::PointXYZIRC> cloud_xyzirc;
-  cloud_xyzirc.reserve(input_cloud->size());
-
-  for (const auto & pt_xyz : input_cloud->points) {
-    autoware::point_types::PointXYZIRC p_xyzirc;
-    p_xyzirc.x = pt_xyz.x;
-    p_xyzirc.y = pt_xyz.y;
-    p_xyzirc.z = pt_xyz.z;
-    p_xyzirc.intensity = 0;
-    p_xyzirc.return_type = 0;
-    p_xyzirc.channel = 0;
-    cloud_xyzirc.push_back(p_xyzirc);
-  }
-
-  return cloud_xyzirc;
-}
-
-pcl::PointCloud<autoware::point_types::PointXYZIRC>
-DummyPerceptionPublisherNode::convertPointCloudXYZtoXYZIRC(
-  const pcl::PointCloud<pcl::PointXYZ>::Ptr & input_cloud, const uint8_t class_id) const
-{
-  pcl::PointCloud<autoware::point_types::PointXYZIRC> cloud_xyzirc;
-  cloud_xyzirc.reserve(input_cloud->size());
-
-  for (const auto & pt_xyz : input_cloud->points) {
-    autoware::point_types::PointXYZIRC p_xyzirc;
-    p_xyzirc.x = pt_xyz.x;
-    p_xyzirc.y = pt_xyz.y;
-    p_xyzirc.z = pt_xyz.z;
-    p_xyzirc.intensity = class_id;
-    p_xyzirc.return_type = 0;
-    p_xyzirc.channel = 0;
-    cloud_xyzirc.push_back(p_xyzirc);
-  }
-
-  return cloud_xyzirc;
-}
-
-pcl::PointCloud<autoware::point_types::PointXYZCPE>
-DummyPerceptionPublisherNode::convertPointCloudXYZtoXYZCPE(
-  const pcl::PointCloud<pcl::PointXYZ>::Ptr & input_cloud,
-  const autoware_perception_msgs::msg::ObjectClassification & classification) const
-{
-  return convertPointCloudXYZtoXYZCPE(
-    input_cloud, toPointCloudClassificationId(classification), classification.probability);
-}
-
-pcl::PointCloud<autoware::point_types::PointXYZCPE>
-DummyPerceptionPublisherNode::convertPointCloudXYZtoXYZCPE(
-  const pcl::PointCloud<pcl::PointXYZ>::Ptr & input_cloud, const uint8_t class_id,
-  const float probability) const
-{
-  pcl::PointCloud<autoware::point_types::PointXYZCPE> cloud_xyzcpe;
-  cloud_xyzcpe.reserve(input_cloud->size());
-
-  for (const auto & pt_xyz : input_cloud->points) {
-    autoware::point_types::PointXYZCPE p_xyzcpe;
-    p_xyzcpe.x = pt_xyz.x;
-    p_xyzcpe.y = pt_xyz.y;
-    p_xyzcpe.z = pt_xyz.z;
-    p_xyzcpe.class_id = class_id;
-    p_xyzcpe.probability = probability;
-    p_xyzcpe.entropy = 0.0F;
-    cloud_xyzcpe.push_back(p_xyzcpe);
-  }
-
-  return cloud_xyzcpe;
 }
 
 void DummyPerceptionPublisherNode::timerCallback()
@@ -295,9 +198,10 @@ void DummyPerceptionPublisherNode::timerCallback()
       obj_infos, tf_base_link2map, random_generator_, merged_pointcloud_ptr);
   }
 
+  const auto & static_areas = static_area_registry_.static_areas();
   std::vector<ObjectInfo> static_area_infos;
-  static_area_infos.reserve(static_areas_.size());
-  for (const auto & static_area : static_areas_) {
+  static_area_infos.reserve(static_areas.size());
+  for (const auto & static_area : static_areas) {
     static_area_infos.push_back(ObjectInfo::fromDummyObject(static_area));
   }
 
@@ -309,31 +213,8 @@ void DummyPerceptionPublisherNode::timerCallback()
       static_area_infos, tf_base_link2map, random_generator_, static_area_merged_pointcloud_ptr);
   }
 
-  if (point_type_ == PointType::XYZIRC) {
-    pcl::PointCloud<autoware::point_types::PointXYZIRC> output_pointcloud;
-    if (publish_object_pointcloud_) {
-      output_pointcloud += convertPointCloudXYZtoXYZIRC(merged_pointcloud_ptr);
-    }
-    for (size_t i = 0; i < static_area_pointclouds.size(); ++i) {
-      output_pointcloud += convertPointCloudXYZtoXYZIRC(
-        static_area_pointclouds.at(i), static_areas_.at(i).classification.label);
-    }
-    pcl::toROSMsg(output_pointcloud, output_pointcloud_msg);
-  } else {
-    pcl::PointCloud<autoware::point_types::PointXYZCPE> output_pointcloud;
-    if (publish_object_pointcloud_) {
-      for (size_t i = 0; i < object_pointclouds.size(); ++i) {
-        output_pointcloud +=
-          convertPointCloudXYZtoXYZCPE(object_pointclouds.at(i), all_objects.at(i).classification);
-      }
-    }
-    for (size_t i = 0; i < static_area_pointclouds.size(); ++i) {
-      output_pointcloud += convertPointCloudXYZtoXYZCPE(
-        static_area_pointclouds.at(i), static_areas_.at(i).classification.label,
-        static_areas_.at(i).classification.probability);
-    }
-    pcl::toROSMsg(output_pointcloud, output_pointcloud_msg);
-  }
+  output_pointcloud_msg = pointcloud_labeler_->label(
+    all_objects, object_pointclouds, static_areas, static_area_pointclouds);
 
   if (!selected_indices.empty()) {
     std::vector<ObjectInfo> detected_obj_infos;
@@ -535,24 +416,12 @@ void DummyPerceptionPublisherNode::objectCallback(
 
 void DummyPerceptionPublisherNode::staticAreaCallback(const SimulatedObject::ConstSharedPtr msg)
 {
-  if (msg->action == SimulatedObject::DELETE_ALL) {
-    static_areas_.clear();
+  if (msg->action == SimulatedObject::DELETE_ALL || msg->action == SimulatedObject::DELETE) {
+    static_area_registry_.apply(*msg);
     return;
   }
 
-  if (msg->action == SimulatedObject::DELETE) {
-    static_areas_.erase(
-      std::remove_if(
-        static_areas_.begin(), static_areas_.end(),
-        [&](const auto & static_area) { return static_area.id == msg->id; }),
-      static_areas_.end());
-    return;
-  }
-
-  if (
-    msg->shape.type != autoware_perception_msgs::msg::Shape::BOUNDING_BOX ||
-    msg->shape.dimensions.x <= 0.0 || msg->shape.dimensions.y <= 0.0 ||
-    msg->shape.dimensions.z <= 0.0) {
+  if (!is_valid_static_area(*msg)) {
     RCLCPP_WARN_THROTTLE(
       get_logger(), *get_clock(), 5000,
       "Static area requires BOUNDING_BOX shape with positive dimensions.");
@@ -591,15 +460,7 @@ void DummyPerceptionPublisherNode::staticAreaCallback(const SimulatedObject::Con
     }
   }
 
-  static_areas_.erase(
-    std::remove_if(
-      static_areas_.begin(), static_areas_.end(),
-      [&](const auto & existing_static_area) { return existing_static_area.id == static_area.id; }),
-    static_areas_.end());
-
-  if (msg->action == SimulatedObject::ADD || msg->action == SimulatedObject::MODIFY) {
-    static_areas_.push_back(static_area);
-  }
+  static_area_registry_.apply(static_area);
 }
 
 }  // namespace autoware::dummy_perception_publisher

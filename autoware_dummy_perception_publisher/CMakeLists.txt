@@ -33,6 +33,8 @@ ament_auto_add_executable(${PROJECT_NAME}_node
   src/object_info.cpp
   src/movement_utils.cpp
   src/pointcloud_creator.cpp
+  src/pointcloud_labeler.cpp
+  src/static_area_registry.cpp
   src/straight_line_object_movement_plugin.cpp
   src/predicted_object_movement_plugin.cpp
 )
