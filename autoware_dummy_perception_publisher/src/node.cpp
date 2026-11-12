@@ -416,11 +416,13 @@ void DummyPerceptionPublisherNode::objectCallback(
 
 void DummyPerceptionPublisherNode::staticAreaCallback(const SimulatedObject::ConstSharedPtr msg)
 {
+  // deletion needs only the id, so apply it without any transform
   if (msg->action == SimulatedObject::DELETE_ALL || msg->action == SimulatedObject::DELETE) {
     static_area_registry_.apply(*msg);
     return;
   }
 
+  // reject shapes that cannot be turned into a point cloud
   if (!is_valid_static_area(*msg)) {
     RCLCPP_WARN_THROTTLE(
       get_logger(), *get_clock(), 5000,
@@ -428,6 +430,7 @@ void DummyPerceptionPublisherNode::staticAreaCallback(const SimulatedObject::Con
     return;
   }
 
+  // look up the transform between the input frame and map at the message time
   tf2::Transform tf_input2map;
   try {
     const auto ros_input2map = tf_buffer_.lookupTransform(
@@ -438,15 +441,18 @@ void DummyPerceptionPublisherNode::staticAreaCallback(const SimulatedObject::Con
     return;
   }
 
+  // express the static area pose in the map frame
   tf2::Transform tf_input2object_origin;
   tf2::fromMsg(msg->initial_state.pose_covariance.pose, tf_input2object_origin);
   const auto tf_map2object_origin = tf_input2map.inverse() * tf_input2object_origin;
 
+  // store a copy of the message whose pose and header are rewritten to the map frame
   SimulatedObject static_area = *msg;
   static_area.header.frame_id = "map";
   static_area.header.stamp = msg->header.stamp;
   tf2::toMsg(tf_map2object_origin, static_area.initial_state.pose_covariance.pose);
 
+  // raise the static area by the ego base_link height plus half its own height
   if (use_base_link_z_) {
     TransformStamped ros_map2base_link;
     try {
@@ -460,6 +466,7 @@ void DummyPerceptionPublisherNode::staticAreaCallback(const SimulatedObject::Con
     }
   }
 
+  // ADD / MODIFY store or replace the static area with the same id, other actions remove it
   static_area_registry_.apply(static_area);
 }
 
