@@ -17,6 +17,8 @@
 
 #include "autoware/dummy_perception_publisher/dummy_object_movement_base_plugin.hpp"
 #include "autoware/dummy_perception_publisher/object_info.hpp"
+#include "autoware/dummy_perception_publisher/pointcloud_labeler.hpp"
+#include "autoware/dummy_perception_publisher/static_area_registry.hpp"
 
 #include <autoware/point_types/types.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -100,6 +102,7 @@ private:
   rclcpp::Publisher<autoware_perception_msgs::msg::TrackedObjects>::SharedPtr
     ground_truth_objects_pub_;
   rclcpp::Subscription<SimulatedObject>::SharedPtr object_sub_;
+  rclcpp::Subscription<SimulatedObject>::SharedPtr static_area_sub_;
   rclcpp::TimerBase::SharedPtr timer_;
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_listener_;
@@ -109,16 +112,16 @@ private:
   bool enable_ray_tracing_;
   bool use_base_link_z_;
   std::unique_ptr<PointCloudCreator> pointcloud_creator_;
+  std::unique_ptr<PointCloudLabeler> pointcloud_labeler_;
   // dummy object movement plugins
   std::vector<std::shared_ptr<pluginlib::DummyObjectMovementBasePlugin>> movement_plugins_;
+  StaticAreaRegistry static_area_registry_;
   double angle_increment_;
   std::mt19937 random_generator_;
 
   void timerCallback();
   void objectCallback(const SimulatedObject::ConstSharedPtr msg);
-
-  pcl::PointCloud<autoware::point_types::PointXYZIRC> convertPointCloudXYZtoXYZIRC(
-    const pcl::PointCloud<pcl::PointXYZ>::Ptr & input_cloud) const;
+  void staticAreaCallback(const SimulatedObject::ConstSharedPtr msg);
 
 public:
   DummyPerceptionPublisherNode();

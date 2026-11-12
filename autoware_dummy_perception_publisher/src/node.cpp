@@ -61,6 +61,10 @@ DummyPerceptionPublisherNode::DummyPerceptionPublisherNode()
   detection_successful_rate_ = this->declare_parameter("detection_successful_rate", 0.8);
   enable_ray_tracing_ = this->declare_parameter("enable_ray_tracing", true);
   use_base_link_z_ = this->declare_parameter("use_base_link_z", true);
+  const bool publish_object_pointcloud =
+    this->declare_parameter("publish_object_pointcloud", false);
+  const auto point_type =
+    parse_point_type(this->declare_parameter("point_type", std::string{"XYZCPE"}));
   const bool object_centric_pointcloud =
     this->declare_parameter("object_centric_pointcloud", false);
   const unsigned int random_seed =
@@ -74,6 +78,8 @@ DummyPerceptionPublisherNode::DummyPerceptionPublisherNode()
     pointcloud_creator_ =
       std::unique_ptr<PointCloudCreator>(new EgoCentricPointCloudCreator(visible_range_));
   }
+  pointcloud_labeler_ = std::make_unique<PointCloudLabeler>(
+    PointCloudLabelerConfig{point_type, publish_object_pointcloud});
 
   // parameters for vehicle centric point cloud generation
   angle_increment_ = this->declare_parameter("angle_increment", 0.25 * M_PI / 180.0);
@@ -94,6 +100,9 @@ DummyPerceptionPublisherNode::DummyPerceptionPublisherNode()
   object_sub_ = this->create_subscription<autoware_simulation_msgs::msg::SimulatedObject>(
     "input/object", 100,
     std::bind(&DummyPerceptionPublisherNode::objectCallback, this, std::placeholders::_1));
+  static_area_sub_ = this->create_subscription<autoware_simulation_msgs::msg::SimulatedObject>(
+    "input/static_area", 100,
+    std::bind(&DummyPerceptionPublisherNode::staticAreaCallback, this, std::placeholders::_1));
 
   ground_truth_objects_pub_ = this->create_publisher<autoware_perception_msgs::msg::TrackedObjects>(
     "~/output/debug/ground_truth_objects", qos);
@@ -105,27 +114,6 @@ DummyPerceptionPublisherNode::DummyPerceptionPublisherNode()
   // Initialize movement plugins directly in the vector
   movement_plugins_.push_back(std::make_shared<pluginlib::StraightLineObjectMovementPlugin>(this));
   movement_plugins_.push_back(std::make_shared<pluginlib::PredictedObjectMovementPlugin>(this));
-}
-
-pcl::PointCloud<autoware::point_types::PointXYZIRC>
-DummyPerceptionPublisherNode::convertPointCloudXYZtoXYZIRC(
-  const pcl::PointCloud<pcl::PointXYZ>::Ptr & input_cloud) const
-{
-  pcl::PointCloud<autoware::point_types::PointXYZIRC> cloud_xyzirc;
-  cloud_xyzirc.reserve(input_cloud->size());
-
-  for (const auto & pt_xyz : input_cloud->points) {
-    autoware::point_types::PointXYZIRC p_xyzirc;
-    p_xyzirc.x = pt_xyz.x;
-    p_xyzirc.y = pt_xyz.y;
-    p_xyzirc.z = pt_xyz.z;
-    p_xyzirc.intensity = 0;
-    p_xyzirc.return_type = 0;
-    p_xyzirc.channel = 0;
-    cloud_xyzirc.push_back(p_xyzirc);
-  }
-
-  return cloud_xyzirc;
 }
 
 void DummyPerceptionPublisherNode::timerCallback()
@@ -203,16 +191,31 @@ void DummyPerceptionPublisherNode::timerCallback()
   pcl::PointCloud<pcl::PointXYZ>::Ptr merged_pointcloud_ptr(new pcl::PointCloud<pcl::PointXYZ>);
   pcl::PointCloud<pcl::PointXYZ>::Ptr detected_merged_pointcloud_ptr(
     new pcl::PointCloud<pcl::PointXYZ>);
+  std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> object_pointclouds;
 
-  if (all_objects.empty()) {
-    const auto pointcloud_xyzirc = convertPointCloudXYZtoXYZIRC(merged_pointcloud_ptr);
-    pcl::toROSMsg(pointcloud_xyzirc, output_pointcloud_msg);
-  } else {
-    pointcloud_creator_->create_pointclouds(
+  if (!all_objects.empty()) {
+    object_pointclouds = pointcloud_creator_->create_pointclouds(
       obj_infos, tf_base_link2map, random_generator_, merged_pointcloud_ptr);
-    const auto pointcloud_xyzirc = convertPointCloudXYZtoXYZIRC(merged_pointcloud_ptr);
-    pcl::toROSMsg(pointcloud_xyzirc, output_pointcloud_msg);
   }
+
+  const auto & static_areas = static_area_registry_.static_areas();
+  std::vector<ObjectInfo> static_area_infos;
+  static_area_infos.reserve(static_areas.size());
+  for (const auto & static_area : static_areas) {
+    static_area_infos.push_back(ObjectInfo::fromDummyObject(static_area));
+  }
+
+  pcl::PointCloud<pcl::PointXYZ>::Ptr static_area_merged_pointcloud_ptr(
+    new pcl::PointCloud<pcl::PointXYZ>);
+  std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> static_area_pointclouds;
+  if (!static_area_infos.empty()) {
+    static_area_pointclouds = pointcloud_creator_->create_pointclouds(
+      static_area_infos, tf_base_link2map, random_generator_, static_area_merged_pointcloud_ptr);
+  }
+
+  output_pointcloud_msg = pointcloud_labeler_->label(
+    all_objects, object_pointclouds, static_areas, static_area_pointclouds);
+
   if (!selected_indices.empty()) {
     std::vector<ObjectInfo> detected_obj_infos;
     for (const auto selected_idx : selected_indices) {
@@ -409,6 +412,62 @@ void DummyPerceptionPublisherNode::objectCallback(
       break;
     }
   }
+}
+
+void DummyPerceptionPublisherNode::staticAreaCallback(const SimulatedObject::ConstSharedPtr msg)
+{
+  // deletion needs only the id, so apply it without any transform
+  if (msg->action == SimulatedObject::DELETE_ALL || msg->action == SimulatedObject::DELETE) {
+    static_area_registry_.apply(*msg);
+    return;
+  }
+
+  // reject shapes that cannot be turned into a point cloud
+  if (!is_valid_static_area(*msg)) {
+    RCLCPP_WARN_THROTTLE(
+      get_logger(), *get_clock(), 5000,
+      "Static area requires BOUNDING_BOX shape with positive dimensions.");
+    return;
+  }
+
+  // look up the transform between the input frame and map at the message time
+  tf2::Transform tf_input2map;
+  try {
+    const auto ros_input2map = tf_buffer_.lookupTransform(
+      msg->header.frame_id, "map", msg->header.stamp, rclcpp::Duration::from_seconds(0.5));
+    tf2::fromMsg(ros_input2map.transform, tf_input2map);
+  } catch (tf2::TransformException & ex) {
+    RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 5000, "%s", ex.what());
+    return;
+  }
+
+  // express the static area pose in the map frame
+  tf2::Transform tf_input2object_origin;
+  tf2::fromMsg(msg->initial_state.pose_covariance.pose, tf_input2object_origin);
+  const auto tf_map2object_origin = tf_input2map.inverse() * tf_input2object_origin;
+
+  // store a copy of the message whose pose and header are rewritten to the map frame
+  SimulatedObject static_area = *msg;
+  static_area.header.frame_id = "map";
+  static_area.header.stamp = msg->header.stamp;
+  tf2::toMsg(tf_map2object_origin, static_area.initial_state.pose_covariance.pose);
+
+  // raise the static area by the ego base_link height plus half its own height
+  if (use_base_link_z_) {
+    TransformStamped ros_map2base_link;
+    try {
+      ros_map2base_link = tf_buffer_.lookupTransform(
+        "map", "base_link", rclcpp::Time(0), rclcpp::Duration::from_seconds(0.5));
+      static_area.initial_state.pose_covariance.pose.position.z +=
+        ros_map2base_link.transform.translation.z + 0.5 * static_area.shape.dimensions.z;
+    } catch (tf2::TransformException & ex) {
+      RCLCPP_WARN_SKIPFIRST_THROTTLE(get_logger(), *get_clock(), 5000, "%s", ex.what());
+      return;
+    }
+  }
+
+  // ADD / MODIFY store or replace the static area with the same id, other actions remove it
+  static_area_registry_.apply(static_area);
 }
 
 }  // namespace autoware::dummy_perception_publisher

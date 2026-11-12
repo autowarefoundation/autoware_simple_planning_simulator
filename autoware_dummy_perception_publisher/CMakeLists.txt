@@ -10,6 +10,7 @@ find_package(autoware_point_types REQUIRED)
 find_package(PCL REQUIRED COMPONENTS common filters)
 
 set(${PROJECT_NAME}_DEPENDENCIES
+  autoware_object_recognition_utils
   autoware_perception_msgs
   autoware_point_types
   autoware_simulation_msgs
@@ -26,6 +27,12 @@ ament_auto_add_library(signed_distance_function SHARED
   src/signed_distance_function.cpp
 )
 
+ament_auto_add_library(${PROJECT_NAME}_core SHARED
+  src/pointcloud_labeler.cpp
+  src/static_area_registry.cpp
+)
+target_include_directories(${PROJECT_NAME}_core PRIVATE ${PCL_INCLUDE_DIRS})
+
 ament_auto_add_executable(${PROJECT_NAME}_node
   src/main.cpp
   src/node.cpp
@@ -38,6 +45,7 @@ ament_auto_add_executable(${PROJECT_NAME}_node
 
 target_link_libraries(${PROJECT_NAME}_node
   signed_distance_function
+  ${PROJECT_NAME}_core
 )
 
 ament_target_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_DEPENDENCIES})
@@ -70,6 +78,21 @@ if(BUILD_TESTING)
   )
   target_link_libraries(signed_distance_function-test
     signed_distance_function
+  )
+
+  ament_add_ros_isolated_gtest(test_pointcloud_labeler
+    test/src/test_pointcloud_labeler.cpp
+  )
+  target_link_libraries(test_pointcloud_labeler
+    ${PROJECT_NAME}_core
+  )
+  target_include_directories(test_pointcloud_labeler PRIVATE ${PCL_INCLUDE_DIRS})
+
+  ament_add_ros_isolated_gtest(test_static_area_registry
+    test/src/test_static_area_registry.cpp
+  )
+  target_link_libraries(test_static_area_registry
+    ${PROJECT_NAME}_core
   )
 endif()
 
