@@ -29,7 +29,13 @@ namespace autoware::dummy_perception_publisher
 
 enum class PointType { XYZIRC, XYZCPE };
 
-// throws std::invalid_argument unless point_type is "XYZIRC" or "XYZCPE"
+/**
+ * @brief Parse the `point_type` parameter string.
+ *
+ * @param point_type `"XYZIRC"` or `"XYZCPE"`.
+ * @return The corresponding PointType.
+ * @throws std::invalid_argument If `point_type` is neither `"XYZIRC"` nor `"XYZCPE"`.
+ */
 PointType parse_point_type(const std::string & point_type);
 
 struct PointCloudLabelerConfig
@@ -43,10 +49,29 @@ class PointCloudLabeler
 public:
   explicit PointCloudLabeler(const PointCloudLabelerConfig & config);
 
-  // Merges the generated points into a single cloud of the configured point type.
-  // object_pointclouds[i] must hold the points of objects[i], and the same for static areas.
-  // Object labels are converted from ObjectClassification, while static area labels are used
-  // as PointCloudClassification values as they are. XYZIRC object points get intensity 0.
+  /**
+   * @brief Merge the generated points into a single cloud of the configured point type.
+   *
+   * How each point is labeled depends on the point type:
+   * - `XYZCPE`: object labels are converted from `ObjectClassification` to
+   *   `PointCloudClassification` (`INVALID` if there is no counterpart), while static area labels
+   *   are used as `PointCloudClassification` values as they are. `probability` is copied from the
+   *   classification.
+   * - `XYZIRC`: object points get intensity 0, and static area points get their label as
+   *   intensity.
+   *
+   * Object points are included only if `publish_object_pointcloud` is enabled.
+   *
+   * @param objects Objects whose points are given in `object_pointclouds`.
+   * @param object_pointclouds Points of each object; `object_pointclouds[i]` belongs to
+   *                           `objects[i]`.
+   * @param static_areas Static areas whose points are given in `static_area_pointclouds`.
+   * @param static_area_pointclouds Points of each static area; `static_area_pointclouds[i]`
+   *                                belongs to `static_areas[i]`.
+   * @return The merged point cloud. Its header is left empty.
+   * @throws std::invalid_argument If the number of point clouds differs from the number of
+   *                               objects or static areas.
+   */
   [[nodiscard]] sensor_msgs::msg::PointCloud2 label(
     const std::vector<autoware_simulation_msgs::msg::SimulatedObject> & objects,
     const std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> & object_pointclouds,

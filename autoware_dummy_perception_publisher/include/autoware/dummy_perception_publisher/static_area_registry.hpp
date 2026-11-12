@@ -22,18 +22,37 @@
 namespace autoware::dummy_perception_publisher
 {
 
-// a static area must be a BOUNDING_BOX with positive dimensions
+/**
+ * @brief Check whether the given object can be used as a static area.
+ *
+ * @param static_area Static area to check.
+ * @return True if its shape is `BOUNDING_BOX` with positive dimensions.
+ */
 bool is_valid_static_area(const autoware_simulation_msgs::msg::SimulatedObject & static_area);
 
 class StaticAreaRegistry
 {
 public:
-  // DELETE_ALL removes all static areas, ADD and MODIFY replace the static area with the same id,
-  // and any other action removes it.
-  // ADD and MODIFY throw std::invalid_argument unless the static area is valid and in the map
-  // frame.
+  /**
+   * @brief Update the stored static areas according to the action of the given message.
+   *
+   * - `ADD` / `MODIFY`: store the static area, replacing any stored one with the same id.
+   * - `DELETE`: remove the stored static area with the same id.
+   * - `DELETE_ALL`: remove all stored static areas.
+   * - Any other action: treated as `DELETE`.
+   *
+   * @param msg Static area to apply. For `ADD` / `MODIFY`, it must satisfy
+   *            is_valid_static_area() and be in the `map` frame.
+   * @throws std::invalid_argument If `ADD` / `MODIFY` is given an invalid static area or one
+   *                               not in the `map` frame.
+   */
   void apply(const autoware_simulation_msgs::msg::SimulatedObject & msg);
 
+  /**
+   * @brief Get the stored static areas.
+   *
+   * @return Stored static areas, all in the `map` frame.
+   */
   [[nodiscard]] const std::vector<autoware_simulation_msgs::msg::SimulatedObject> & static_areas()
     const;
 
