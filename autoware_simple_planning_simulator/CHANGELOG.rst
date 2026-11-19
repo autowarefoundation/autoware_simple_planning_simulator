@@ -2,8 +2,8 @@
 Changelog for package autoware_simple_planning_simulator
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.2.0 (2026-11-19)
+------------------
 * fix(simple_planning_simulator): declare consumed command inputs and drop undeclared outputs from the node design (`#22 <https://github.com/autowarefoundation/autoware_simple_planning_simulator/issues/22>`_)
   * feat: add new processes for control commands and gear management in SimplePlanningSimulator
   * refactor(simple_planning_simulator): move the node design to format 0.4.0 with descriptions

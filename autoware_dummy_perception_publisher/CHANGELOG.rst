@@ -2,8 +2,8 @@
 Changelog for package autoware_dummy_perception_publisher
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.2.0 (2026-11-19)
+------------------
 * feat(dummy_perception_publisher): add support of publishing labeld poincloud (`#28 <https://github.com/autowarefoundation/autoware_simple_planning_simulator/issues/28>`_)
   * feat(dummy_perception_publisher): add support of publishing labeld pointcloud for static area
   * enhancement for testability: extract application code from node-logic
