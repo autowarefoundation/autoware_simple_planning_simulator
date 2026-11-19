@@ -2,6 +2,42 @@
 Changelog for package autoware_dummy_perception_publisher
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.2.0 (2026-11-19)
+------------------
+* feat(dummy_perception_publisher): add support of publishing labeld poincloud (`#28 <https://github.com/autowarefoundation/autoware_simple_planning_simulator/issues/28>`_)
+  * feat(dummy_perception_publisher): add support of publishing labeld pointcloud for static area
+  * enhancement for testability: extract application code from node-logic
+  Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+  * test: added tests for core logic
+  Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+  * cosmetic: very minor copyright bug fix
+  * comment: use Doxygen formatted
+  Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+  * comment: enhance code readability
+  Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+  ---------
+  Co-authored-by: Junya Sasaki <junya.sasaki@tier4.jp>
+  Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+* ci(build-and-test): fix the clang-tidy config URL and its findings (`#25 <https://github.com/autowarefoundation/autoware_simple_planning_simulator/issues/25>`_)
+  * ci(build-and-test): add .clang-tidy-ci
+  The clang-tidy job of build-and-test fetches .clang-tidy-ci from this
+  repository, but the file did not exist, so curl failed with 404 on every
+  main run since the packages were added.
+  Copy the file from autoware_core, which build-and-test-diff already uses.
+  * fix(autoware_dummy_perception_publisher): satisfy bugprone-unchecked-optional-access
+  clang-tidy loses the has_value() state across repeated info_it->second
+  calls, so it reports a checked optional access as unchecked. Read the
+  optional through a local reference after the end() check. No change in
+  behavior.
+  * ci(build-and-test): read .clang-tidy-ci from autoware_core
+  The differential workflow already reads the autoware_core file. A copy in this repository has no sync process, so the two workflows can check different rules after autoware_core changes its file.
+  Remove the copy and point the clang-tidy job of build-and-test-reusable.yaml at the autoware_core file.
+  * fix(autoware_dummy_perception_publisher): read the optionals in move_objects through local references
+  clang-tidy 18 does not analyze the lambda in move_objects, so it did not report this access. The lambda now uses the same pattern as the other functions of the file.
+  Also correct the comment on the return for a missing map entry in is_valid_remapping_candidate.
+  ---------
+* Contributors: Kotaro Uetake, Mete Fatih Cırıt
+
 1.1.0 (2026-09-22)
 ------------------
 
