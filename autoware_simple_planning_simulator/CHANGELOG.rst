@@ -2,6 +2,15 @@
 Changelog for package autoware_simple_planning_simulator
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fix(simple_planning_simulator): declare consumed command inputs and drop undeclared outputs from the node design (`#22 <https://github.com/autowarefoundation/autoware_simple_planning_simulator/issues/22>`_)
+  * feat: add new processes for control commands and gear management in SimplePlanningSimulator
+  * refactor(simple_planning_simulator): move the node design to format 0.4.0 with descriptions
+  ---------
+* feat(simple_planning_simulator): add understeer gradient k_us to DELAY_STEER_ACC_GEARED_WO_FALL_GUARD (`#26 <https://github.com/autowarefoundation/autoware_simple_planning_simulator/issues/26>`_)
+* Contributors: Kotaro Yoshimoto, Taekjin LEE
+
 1.1.0 (2026-09-22)
 ------------------
 * refactor: migrate SimplePlanningSimulator node design file from autoware_universe (`#17 <https://github.com/autowarefoundation/autoware_simple_planning_simulator/issues/17>`_)
