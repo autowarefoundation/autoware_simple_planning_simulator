@@ -25,7 +25,8 @@ jobs:
       pull-ccache: true
       push-ccache: false
       cache-key-element: daily-build
-      codecov-flag: daily-${{ matrix.rosdistro }}
+      upload-coverage: ${{ matrix.rosdistro == 'jazzy' }}
+      codecov-flag: ${{ github.event_name == 'schedule' && 'daily' || 'full-suite' }}
       concurrency-group: build-and-test-daily-${{ matrix.rosdistro }}-${{ github.ref }}-${{ github.run_id }}
       runner: "['ubuntu-latest']"
 

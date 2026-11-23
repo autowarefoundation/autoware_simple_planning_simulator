@@ -25,6 +25,10 @@ on:
         default: true
         required: false
         type: boolean
+      upload-coverage:
+        default: false
+        required: false
+        type: boolean
 
 env:
   CC: /usr/lib/ccache/gcc
@@ -133,14 +137,16 @@ jobs:
           underlay-workspace: /opt/autoware
 
       - name: Upload coverage to CodeCov
-        if: ${{ steps.test.outputs.coverage-report-files != '' && !inputs.above }}
+        if: ${{ steps.test.outputs.coverage-report-files != '' && inputs.upload-coverage }}
+        # Intentionally flagless: flagging this partial upload would suppress the full-suite carryforward.
         uses: codecov/codecov-action@v7
         with:
           files: ${{ steps.test.outputs.coverage-report-files }}
           fail_ci_if_error: false
           verbose: true
-          flags: differential-${{ inputs.ros_distro }}
           token: ${{ secrets.codecov-token }}
+          disable_search: true
+          plugins: noop
 
       - name: Show disk space after the tasks
         run: df -h

@@ -35,6 +35,10 @@ on:
         type: string
         default: default
         required: false
+      upload-coverage:
+        type: boolean
+        default: false
+        required: false
       codecov-flag:
         type: string
         default: other
@@ -158,7 +162,7 @@ jobs:
           underlay-workspace: /opt/autoware
 
       - name: Upload coverage to CodeCov
-        if: ${{ steps.test.outputs.coverage-report-files != '' && !inputs.above }}
+        if: ${{ steps.test.outputs.coverage-report-files != '' && inputs.upload-coverage }}
         uses: codecov/codecov-action@v7
         with:
           files: ${{ steps.test.outputs.coverage-report-files }}
@@ -166,6 +170,8 @@ jobs:
           verbose: true
           flags: ${{ inputs.codecov-flag }}
           token: ${{ secrets.codecov-token }}
+          disable_search: true
+          plugins: noop
 
       - name: Show disk space after the tasks
         run: df -h
