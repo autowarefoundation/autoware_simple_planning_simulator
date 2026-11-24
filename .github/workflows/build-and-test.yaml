@@ -25,7 +25,8 @@ jobs:
       pull-ccache: false
       push-ccache: true
       cache-key-element: build
-      codecov-flag: total-${{ matrix.rosdistro }}
+      upload-coverage: ${{ matrix.rosdistro == 'jazzy' }}
+      codecov-flag: full-suite
       concurrency-group: build-and-test-${{ matrix.rosdistro }}-${{ github.ref }}-${{ github.run_id }}
       runner: "['ubuntu-latest']"
 
